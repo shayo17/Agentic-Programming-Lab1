@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitch Legends Cards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="muted display" style="font-size:1.1rem">Preview · Card Collection</p>
+  <h1 class="hero-title">Pitch <span>Legends</span></h1>
+  <p class="muted" style="max-width:640px">Every player has a unique card with six stats, a rarity, and sometimes a special power you can trigger during matches. This is the card database the game is built on. The match engine and career mode come next.</p>
+
+  <div class="panel" style="margin:22px 0">
+    <div class="row" style="margin-bottom:12px"><h3>Rarity</h3><div class="chips" id="rar"></div></div>
+    <div class="row"><h3>Position</h3><div class="chips" id="pos"></div></div>
+  </div>
+  <div class="card-grid" id="grid"></div>
+  <p class="muted" id="count" style="text-align:center;margin-top:14px"></p>
+
+  <h2 style="margin:40px 0 14px">Special powers</h2>
+  <div class="trait-list" id="traits"></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/cards.js"></script>
+<script>
+  const state = { rar: 'all', pos: 'all' };
+  const rars = ['all', 'icon', 'hero', 'rare', 'gold', 'silver', 'bronze'];
+  const poss = ['all', ...POSITIONS];
+  function chips(el, list, key, label) {
+    el.innerHTML = list.map(v => `<button class="chip ${state[key] === v ? 'on' : ''}" data-v="${v}">${v === 'all' ? 'All' : label(v)}</button>`).join('');
+    el.onclick = e => { const b = e.target.closest('button'); if (!b) return; state[key] = b.dataset.v; render(); };
+  }
+  function render() {
+    chips(document.getElementById('rar'), rars, 'rar', v => RARITY_LABEL[v]);
+    chips(document.getElementById('pos'), poss, 'pos', v => v);
+    const list = PLAYERS.filter(p => (state.rar === 'all' || p.rarity === state.rar) && (state.pos === 'all' || p.pos === state.pos))
+      .sort((a, b) => b.ovr - a.ovr);
+    document.getElementById('grid').innerHTML = list.slice(0, 60).map(p => cardHTML(p, { size: 13, cls: 'hoverable' })).join('');
+    document.getElementById('count').textContent = `Showing ${Math.min(60, list.length)} of ${list.length} players`;
+  }
+  document.getElementById('traits').innerHTML = Object.values(TRAITS).map(t =>
+    `<div class="trait-row"><span class="trait" style="--tc:${t.color}">${t.icon}</span><div><b>${t.name}</b><div class="muted" style="font-size:.9em">${t.desc}</div></div></div>`).join('');
+  render();
+</script>
+</body>
+</html>
