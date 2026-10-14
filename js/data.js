@@ -1,6 +1,6 @@
 'use strict';
 /* =========================================================
-   PITCH LEGENDS — data: nations, clubs, players, traits
+   OHANA FC 27 — data: nations, clubs, players, traits
    All players & clubs are fictional and generated from a
    fixed seed so every save file sees the same database.
    ========================================================= */
