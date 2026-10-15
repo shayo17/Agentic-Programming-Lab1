@@ -86,10 +86,10 @@ button { font: inherit; cursor: pointer; }
   display: inline-grid; place-items: center; width: 1.7em; height: 1.7em; border-radius: 50%;
   font-size: .62em; font-weight: 800; border: .14em solid; letter-spacing: 0; line-height: 1;
 }
-.c-face { position: absolute; right: .6em; top: 1.3em; width: 6.4em; height: 6.4em; z-index: 1; }
+.c-face { position: absolute; right: .7em; top: 1.3em; width: 6.1em; height: 6.1em; z-index: 1; }
 .c-face .avatar { width: 100%; height: 100%; filter: drop-shadow(0 .2em .25em rgba(0, 0, 0, .25)); }
 .c-name {
-  position: absolute; top: 7.75em; left: .8em; right: .8em; text-align: center; z-index: 2;
+  position: absolute; top: 6.95em; left: .8em; right: .8em; text-align: center; z-index: 2;
   font-size: 1.12em; font-weight: 800; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   border-bottom: .07em solid currentColor; padding-bottom: .1em; letter-spacing: .02em;
 }

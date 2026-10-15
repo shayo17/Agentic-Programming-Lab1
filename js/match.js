@@ -17,9 +17,16 @@ function angDiff(a, b) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; wh
 
 /* ---------------- Input ---------------- */
 const KEYMAPS = {
-  p1:   { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], pass: ['KeyC'], shoot: ['KeyV'], sprint: ['ShiftLeft'], special: ['KeyB'] },
-  p2:   { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], pass: ['KeyK', 'Numpad1'], shoot: ['KeyL', 'Numpad2'], sprint: ['KeyJ', 'Numpad0'], special: ['KeyI', 'Numpad3'] },
-  solo: { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], pass: ['KeyC', 'KeyK'], shoot: ['KeyV', 'KeyL', 'Space'], sprint: ['ShiftLeft', 'ShiftRight', 'KeyJ'], special: ['KeyB', 'KeyI'] },
+  solo: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], pass: ['KeyS'], shoot: ['KeyD'], tackle: ['KeyA'], switch: ['KeyQ'], sprint: ['ShiftLeft', 'ShiftRight'], special: ['KeyE'] },
+  p1:   { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], pass: ['KeyC'], shoot: ['KeyV'], tackle: ['KeyX'], switch: ['KeyQ'], sprint: ['ShiftLeft'], special: ['KeyE'] },
+  p2:   { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], pass: ['KeyK', 'Numpad2'], shoot: ['KeyL', 'Numpad3'], tackle: ['KeyJ', 'Numpad1'], switch: ['KeyU', 'Numpad4'], sprint: ['ShiftRight', 'Numpad0'], special: ['KeyI', 'Numpad5'] },
+};
+// Shown in the on-screen guide: [action, keys]
+const KEY_GUIDE = {
+  solo: [['Move', '← ↑ → ↓'], ['Pass', 'S'], ['Shoot · hold for power', 'D'], ['Defend · tackle', 'A'], ['Switch player', 'Q'], ['Sprint', 'Shift'], ['Special power', 'E']],
+  p1: [['Move', 'W A S D'], ['Pass', 'C'], ['Shoot · hold for power', 'V'], ['Defend · tackle', 'X'], ['Switch player', 'Q'], ['Sprint', 'Left Shift'], ['Special power', 'E']],
+  p2: [['Move', '← ↑ → ↓'], ['Pass', 'K'], ['Shoot · hold for power', 'L'], ['Defend · tackle', 'J'], ['Switch player', 'U'], ['Sprint', 'Right Shift'], ['Special power', 'I']],
+  pad: [['Move', 'Left stick'], ['Pass', 'A'], ['Shoot', 'B'], ['Defend', 'X'], ['Switch', 'LB'], ['Sprint', 'RT / RB'], ['Special', 'Y'], ['Pause', 'Start']],
 };
 const GAME_KEYS = new Set(Object.values(KEYMAPS).flatMap(m => Object.values(m).flat()));
 
@@ -36,7 +43,7 @@ class Input {
   destroy() { removeEventListener('keydown', this.down); removeEventListener('keyup', this.up); removeEventListener('blur', this.blur); }
   read(mapName, padIndex) {
     const m = KEYMAPS[mapName], k = c => m[c].some(x => this.keys.has(x));
-    const s = { mx: (k('right') ? 1 : 0) - (k('left') ? 1 : 0), my: (k('down') ? 1 : 0) - (k('up') ? 1 : 0), pass: k('pass'), shoot: k('shoot'), sprint: k('sprint'), special: k('special'), pause: false };
+    const s = { mx: (k('right') ? 1 : 0) - (k('left') ? 1 : 0), my: (k('down') ? 1 : 0) - (k('up') ? 1 : 0), pass: k('pass'), shoot: k('shoot'), tackle: k('tackle'), switch: k('switch'), sprint: k('sprint'), special: k('special'), pause: false };
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = pads && pads[padIndex];
     if (gp) {
@@ -45,8 +52,8 @@ class Input {
       if (Math.hypot(ax, ay) < 0.22) ax = ay = 0;
       if (b(14)) ax = -1; if (b(15)) ax = 1; if (b(12)) ay = -1; if (b(13)) ay = 1;
       if (ax || ay) { s.mx = ax; s.my = ay; }
-      s.pass = s.pass || b(0); s.shoot = s.shoot || b(1) || b(2);
-      s.special = s.special || b(3) || b(4); s.sprint = s.sprint || b(5) || b(7) || b(6);
+      s.pass = s.pass || b(0); s.shoot = s.shoot || b(1); s.tackle = s.tackle || b(2); s.switch = s.switch || b(4);
+      s.special = s.special || b(3); s.sprint = s.sprint || b(5) || b(7) || b(6);
       s.pause = b(9);
     }
     const l = Math.hypot(s.mx, s.my); if (l > 1) { s.mx /= l; s.my /= l; }
@@ -148,7 +155,7 @@ class Match {
     this.kickoff(0);
     this.say('KICK OFF', `${this.teams[0].name} vs ${this.teams[1].name}`, 2);
     this.sfx.whistle(false); this.sfx.startCrowd();
-    this.onKey = e => { if (e.code === 'Escape' || e.code === 'KeyP') this.togglePause(); };
+    this.onKey = e => { if (e.code === 'Escape' || e.code === 'KeyP') this.togglePause(); if (e.code === 'KeyH' && this.o.onGuide) this.o.onGuide(); };
     addEventListener('keydown', this.onKey);
     this.resize = () => this.fit(); addEventListener('resize', this.resize); this.fit();
     this.last = performance.now(); this.acc = 0;
@@ -329,7 +336,7 @@ class Match {
   setHumanPlayer(h, p) { if (p && !p.isGK) h.player = p; }
   humanStep(h, dt) {
     const raw = this.input.read(h.map, h.pad);
-    const c = { ...raw, passDown: raw.pass && !h.prev.pass, shootDown: raw.shoot && !h.prev.shoot, shootUp: !raw.shoot && h.prev.shoot, specialDown: raw.special && !h.prev.special };
+    const c = { ...raw, passDown: raw.pass && !h.prev.pass, shootDown: raw.shoot && !h.prev.shoot, shootUp: !raw.shoot && h.prev.shoot, specialDown: raw.special && !h.prev.special, tackleDown: raw.tackle && !h.prev.tackle, switchDown: raw.switch && !h.prev.switch };
     h.prev = raw;
     const b = this.ball, t = h.team;
     if (!h.player || h.player.team !== t) h.player = this.nearest(t.players.filter(p => !p.isGK), b);
@@ -349,7 +356,7 @@ class Match {
     if (b.owner === p) {
       if (isTaker) {
         h.idleT += dt;
-        if (this.restart.t > 0.35 && (c.passDown || c.shootDown || h.idleT > 7)) { this.doPass(p, aim); h.idleT = 0; }
+        if (this.restart.t > 0.35 && (c.passDown || c.shootDown || h.idleT > 10)) { this.doPass(p, aim); h.idleT = 0; }
         return;
       }
       if (c.specialDown) this.activateSpecial(p);
@@ -363,8 +370,8 @@ class Match {
       h.charging = false;
       if (c.specialDown) this.activateSpecial(p);
       if (this.state !== 'play') return;
-      if (c.passDown && !(b.owner && b.owner.team === t)) this.switchPlayer(h);
-      if (c.shootDown && p.tackleCD <= 0 && p.stun <= 0) {
+      if ((c.switchDown || c.passDown) && !(b.owner && b.owner.team === t)) this.switchPlayer(h);
+      if (c.tackleDown && p.tackleCD <= 0 && p.stun <= 0) {
         const car = b.owner && b.owner.team !== t ? b.owner : null;
         const target = car || b;
         const ang = dist(p, target) < 70 ? Math.atan2(target.y - p.y, target.x - p.x) : p.face;

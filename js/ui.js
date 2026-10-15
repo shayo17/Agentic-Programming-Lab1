@@ -92,8 +92,8 @@ function showKickoffType() {
     <div class="page-head"><button class="btn ghost small" id="back">← Modes</button><h2>Kick-Off</h2></div>
     <p class="eyebrow">Who's playing?</p>
     <div class="mode-cards">
-      <button class="mode-card" id="k-cpu"><span class="mc-num">1P</span><b>Play vs Computer</b><span>You control one team. Choose the difficulty from Amateur to Legendary.</span><span class="mc-tags"><i>WASD or arrows</i><i>Gamepad</i></span></button>
-      <button class="mode-card p2" id="k-2p"><span class="mc-num">2P</span><b>2 Players</b><span>Head to head on one keyboard. Player 1 uses WASD, Player 2 uses the arrow keys. Gamepads work too.</span><span class="mc-tags"><i>Same keyboard</i><i>2 gamepads</i></span></button>
+      <button class="mode-card" id="k-cpu"><span class="mc-num">1P</span><b>Play vs Computer</b><span>You control one team. Choose the difficulty from Amateur to Legendary.</span><span class="mc-tags"><i>Arrows + S D A</i><i>Gamepad</i></span></button>
+      <button class="mode-card p2" id="k-2p"><span class="mc-num">2P</span><b>2 Players</b><span>Head to head on one keyboard. Player 1 uses W A S D, Player 2 uses the arrow keys. Gamepads work too.</span><span class="mc-tags"><i>Same keyboard</i><i>2 gamepads</i></span></button>
     </div>
   </section>`;
   $('#back').onclick = showModes;
@@ -109,30 +109,17 @@ function toast(msg) {
 }
 
 /* ---------- Controls ---------- */
-const CONTROLS_HTML = `
-  <div class="controls-grid">
-    <div><h3>Player 1 (or solo)</h3><dl>
-      <dt>Move</dt><dd><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="muted">solo: arrows too</span></dd>
-      <dt>Pass · switch player</dt><dd><kbd>C</kbd></dd>
-      <dt>Shoot (hold for power) · tackle</dt><dd><kbd>V</kbd> <span class="muted">solo: Space too</span></dd>
-      <dt>Sprint</dt><dd><kbd>Shift</kbd></dd>
-      <dt>Special power</dt><dd><kbd>B</kbd></dd></dl></div>
-    <div><h3>Player 2</h3><dl>
-      <dt>Move</dt><dd><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></dd>
-      <dt>Pass · switch player</dt><dd><kbd>K</kbd></dd>
-      <dt>Shoot (hold for power) · tackle</dt><dd><kbd>L</kbd></dd>
-      <dt>Sprint</dt><dd><kbd>J</kbd></dd>
-      <dt>Special power</dt><dd><kbd>I</kbd></dd></dl></div>
-    <div><h3>Gamepad</h3><dl>
-      <dt>Move</dt><dd>Left stick / D-pad</dd>
-      <dt>Pass · switch</dt><dd>A</dd><dt>Shoot · tackle</dt><dd>B or X</dd>
-      <dt>Sprint</dt><dd>RB / RT</dd><dt>Special</dt><dd>Y / LB</dd><dt>Pause</dt><dd>Start</dd></dl></div>
-  </div>
-  <ul class="tips">
-    <li>Hold up or down while shooting to aim at a corner. Release the shoot button early for a placed shot; full power can fly over the bar.</li>
-    <li>The power bar under the score fills over time. When it says READY, press Special to use your controlled player's power (the icon next to their name).</li>
-    <li>Pause with <kbd>Esc</kbd> or <kbd>P</kbd>.</li>
+function keycaps(k) { const t = k.split(' '); return t.every(x => x.length <= 1) ? t.map(x => `<kbd>${x}</kbd>`).join('') : `<kbd>${k}</kbd>`; }
+function guideHTML(map, title, color) {
+  return `<div class="guide" style="--gc:${color || 'var(--accent)'}"><h3>${title}</h3><dl>${KEY_GUIDE[map].map(([act, k]) => `<dt>${act}</dt><dd>${keycaps(k)}</dd>`).join('')}</dl></div>`;
+}
+const GUIDE_TIPS = `<ul class="tips">
+    <li><b>Shooting:</b> hold the shoot key to fill the power bar above your player, then let go. Hold up or down while shooting to aim at a corner. Full power can fly over the bar.</li>
+    <li><b>Defending:</b> get close to the player with the ball and press the defend key to tackle. Press switch to control the teammate nearest the ball.</li>
+    <li><b>Special powers:</b> when the power bar under the score says READY, press the special key. Your player's power is shown at the top right.</li>
+    <li>Press <kbd>H</kbd> during a match to show or hide this guide. Press <kbd>Esc</kbd> to pause.</li>
   </ul>`;
+const CONTROLS_HTML = `<div class="controls-grid">${guideHTML('solo', 'Vs Computer', '#22e6ff')}${guideHTML('p1', '2 Players · Player 1', '#22e6ff')}${guideHTML('p2', '2 Players · Player 2', '#ff4f7b')}${guideHTML('pad', 'Gamepad', '#f5c84c')}</div>${GUIDE_TIPS}`;
 function showControls(back) {
   onKeys(e => { if (e.code === 'Escape') back(); });
   app().innerHTML = `<section class="screen page"><div class="page-head"><button class="btn ghost small" id="back">← Back</button><h2>Controls</h2></div><div class="panel">${CONTROLS_HTML}</div></section>`;
@@ -167,8 +154,9 @@ function showKickoff() {
       <div class="opt"><label>Match length</label><div class="seg small">${DURATIONS.map(d => `<button class="${Settings.duration === d.s ? 'on' : ''}" data-dur="${d.s}">${d.label}</button>`).join('')}</div></div>
       <div class="opt"><label>Sound</label><div class="seg small"><button class="${!Settings.muted ? 'on' : ''}" data-snd="on">On</button><button class="${Settings.muted ? 'on' : ''}" data-snd="off">Off</button></div></div>
     </div>
+    <div class="panel"><div class="controls-grid">${KO.mode === '2p' ? guideHTML('p1', 'Player 1', '#22e6ff') + guideHTML('p2', 'Player 2', '#ff4f7b') : guideHTML('solo', 'Your controls', '#22e6ff')}</div></div>
     <div class="row" style="justify-content:center;gap:14px">
-      <button class="btn ghost" id="ctl">Controls</button>
+      <button class="btn ghost" id="ctl">All controls</button>
       <button class="btn big" id="play">Play match</button>
     </div>
   </section>`;
@@ -205,14 +193,17 @@ function startMatch(o) {
         <details><summary>Controls</summary>${CONTROLS_HTML}</details>
       </div>
     </div>
+    <div class="key-guide" id="kguide">${o.control.filter(c => c !== 'cpu').map(c => guideHTML(c, c === 'p2' ? 'Player 2' : c === 'p1' ? 'Player 1' : 'Controls', c === 'p2' ? '#ff4f7b' : '#22e6ff')).join('')}<p>Press <kbd>H</kbd> to hide or show</p></div>
     <button class="pause-btn" id="pbtn" aria-label="Pause">❚❚</button>
   </section>`;
   const s = getSfx();
   currentMatch = new Match({
     canvas: $('#pitch'), home: o.home, away: o.away, control: o.control, skill: o.skill, duration: o.duration, sfx: s,
     onPause: p => { $('#pause').hidden = !p; },
+    onGuide: () => { const g = $('#kguide'); if (g) { clearTimeout(g._t); g.hidden = !g.hidden; } },
     onEnd: res => { const m = currentMatch; setTimeout(() => { if (m) m.destroy(); currentMatch = null; o.onDone(res); }, 50); },
   });
+  const kg = $('#kguide'); if (kg) kg._t = setTimeout(() => { kg.hidden = true; }, 9000);
   $('#resume').onclick = () => currentMatch.togglePause(false);
   $('#pbtn').onclick = () => currentMatch.togglePause(true);
   $('#mute').onclick = e => { Settings.muted = !Settings.muted; saveSettings(); s.setMuted(Settings.muted); e.target.textContent = Settings.muted ? 'Sound on' : 'Sound off'; };
